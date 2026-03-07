@@ -1,0 +1,119 @@
+# -------------------------------------------------------
+# 신규 workload 추가시 (ex.workload-prod1-vpc) 추가 시 동일 패턴으로 확장
+# -------------------------------------------------------
+
+################################################################################
+# VPC 
+################################################################################
+resource "google_compute_network" "workload_prod1" {
+  name                    = "workload-prod1-vpc"
+  auto_create_subnetworks = false
+  routing_mode            = "REGIONAL"
+  description             = "[Spoke Layer] Test workload VPC - NCC VPC Spoke"
+}
+
+resource "google_compute_subnetwork" "workload_prod1" {
+  name          = "workload-prod1-subnet"
+  network       = google_compute_network.workload_prod1.id
+  region        = var.region
+  ip_cidr_range = "10.30.1.0/24"
+}
+
+
+################################################################################
+# VM  
+################################################################################
+resource "google_compute_instance" "workload_prod1" {
+  name         = "workload-prod1-vm"
+  machine_type = "e2-micro"
+  zone         = var.zone
+  description  = "[Spoke Layer] Test workload VM"
+
+  boot_disk {
+    initialize_params {
+      image = data.google_compute_image.debian.self_link
+      size  = 10
+    }
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.workload_prod1.id
+  }
+
+  metadata = { enable-oslogin = "TRUE" }
+  tags     = ["workload-prod1"]
+}
+
+
+################################################################################
+# FIREWALL
+################################################################################
+
+locals {
+  vpcs_test = {
+    "workload-prod1" = google_compute_network.workload_prod1.name
+  }
+}
+
+# RFC1918 내부 통신 전체 허용
+resource "google_compute_firewall" "allow_internal_test" {
+  for_each = local.vpcs_test
+
+  name    = "${each.key}-allow-internal"
+  network = each.value
+
+  allow { protocol = "all" }
+
+  source_ranges = [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+  ]
+
+  description = "Allow all RFC1918 internal traffic"
+}
+
+# ICMP 허용 (ping 테스트)
+resource "google_compute_firewall" "allow_icmp_test" {
+  for_each = local.vpcs_test
+
+  name    = "${each.key}-allow-icmp"
+  network = each.value
+
+  allow { protocol = "icmp" }
+
+  source_ranges = ["0.0.0.0/0"]
+  description   = "Allow ICMP for connectivity testing"
+}
+
+# IAP SSH 허용 (External IP 없이 SSH 접속)
+resource "google_compute_firewall" "allow_iap_ssh_test" {
+  for_each = local.vpcs_test
+
+  name    = "${each.key}-allow-iap-ssh"
+  network = each.value
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["35.235.240.0/20"]
+  description   = "Allow SSH via Identity-Aware Proxy"
+}
+
+################################################################################
+# NCC Spoke Layer
+################################################################################
+
+ resource "google_network_connectivity_spoke" "vpc_workload_prod1" {
+   provider    = google-beta
+   name        = "ncc-vpc-spoke-workload-prod1"
+   location    = "global"
+   hub         = google_network_connectivity_hub.main.id
+   description = "VPC Spoke: workload-prod1-vpc"
+
+   linked_vpc_network {
+     uri = google_compute_network.workload_prod1.self_link
+   }
+ }
