@@ -53,6 +53,36 @@ BGP를 지원하는 Router Appliance Spoke(NVA) 방식이 이상적이지만, �
 │ [workload-test1-vpc: 10.20.1.0/24]                     │
 │ [workload-prod1-vpc: 10.30.1.0/24] ← (확장 예시)         │
 └────────────────────────────────────────────────────────┘
+
+** HA VPN & BGP Configuration (Edge ↔ Hub) **
+=========================================================================================================
+  [ARCHITECTURE REFERENCE] HA VPN & BGP Configuration (Edge ↔ Hub)
+=========================================================================================================
+  [Edge Layer] edge-vpc : 172.16.1.0/24           |  [Hub Layer] transit-hub-vpc : 10.10.1.0/24
+  Cloud Router : edge-cloud-router                |  Cloud Router : 	transit-hub-cloud-router
+  Local ASN    : 65001                            |  Local ASN    : 65002
+=========================================================================================================
+  TUNNEL 1 (Active)
+---------------------------------------------------------------------------------------------------------
+  Tunnel Name  : tunnel-edge-to-transithub-1         |  Tunnel Name  : tunnel-transithub-to-edge-1
+  VPN GW IP    : 35.242.114.78 (Local)               |  VPN GW IP    : 34.183.16.186 (Local)
+  Remote Peer  : 34.183.16.186                       |  Remote Peer  : 35.242.114.78
+  Peer ASN     : 65002                               |  Peer ASN     : 65001
+  BGP IP       : 169.254.1.1 (Local)                 |  BGP IP       : 169.254.1.2 (Local)
+  BGP Peer IP  : 169.254.1.2                         |  BGP Peer IP  : 169.254.1.1
+  Routes       : Custom (Default + 192.168.1.0/24)   |  Routes       : Default
+=========================================================================================================
+  TUNNEL 2 (Active)
+---------------------------------------------------------------------------------------------------------
+  Tunnel Name  : tunnel-edge-to-transithub-2     |  Tunnel Name  : tunnel-transithub-to-edge-2
+  VPN GW IP    : 35.220.78.96 (Local)                |  VPN GW IP    : 34.184.19.214 (Local)
+  Remote Peer  : 34.184.19.214                       |  Remote Peer  : 35.220.78.96
+  Peer ASN     : 65002                               |  Peer ASN     : 65001
+  BGP IP       : 169.254.2.1 (Local)                 |  BGP IP       : 169.254.2.2 (Local)
+  BGP Peer IP  : 169.254.2.2                         |  BGP Peer IP  : 169.254.2.1
+  Routes       : Custom (Default + 192.168.1.0/24)   |  Routes       : Default
+=========================================================================================================
+
 ```
 
 ---
