@@ -1,0 +1,4 @@
+producer_project_id     = "your-producer-project-id"
+consumer_project_id     = "your-consumer-project-id"
+consumer_project_number = "123456789012"
+region                  = "asia-northeast3"
