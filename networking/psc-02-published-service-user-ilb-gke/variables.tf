@@ -9,19 +9,23 @@ variable "region" {
   default     = "asia-northeast3"
 }
 
-# GKE Autopilot이 pods를 배포하는 zone 목록
-# NEG(Network Endpoint Group)는 zone 별로 생성되므로 조회에 필요
-# null이면 region-a, b, c 를 자동으로 사용
-variable "gke_zones" {
-  description = "GKE 가용 영역 목록 (null이면 region-a/b/c 자동 사용)"
-  type        = list(string)
-  default     = null
-}
-
-locals {
-  gke_zones = var.gke_zones != null ? var.gke_zones : [
-    "${var.region}-a",
-    "${var.region}-b",
-    "${var.region}-c",
-  ]
+# ============================================================
+# Phase 2 변수 (GKE ILB 생성 후 입력)
+# ============================================================
+# GKE 가 K8s Service(LoadBalancer/Internal) 를 감지하면
+# 자동으로 forwarding rule 을 생성하는데, 이름이 a<hash> 형태로 자동 생성됨
+#
+# Phase 1 apply 후 아래 명령어로 이름 확인:
+#   gcloud compute forwarding-rules list \
+#     --regions=<region> \
+#     --project=<project_id> \
+#     --filter="loadBalancingScheme=INTERNAL"
+#
+# 확인 후 terraform.tfvars 에 추가:
+#   ilb_forwarding_rule_name = "a1b2c3d4e5f6..."
+# ============================================================
+variable "ilb_forwarding_rule_name" {
+  description = "GKE 가 생성한 L4 ILB forwarding rule 이름 (Phase 1 apply 후 gcloud 로 확인)"
+  type        = string
+  default     = ""
 }

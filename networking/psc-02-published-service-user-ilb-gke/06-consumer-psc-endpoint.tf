@@ -23,20 +23,20 @@ resource "google_compute_address" "psc_endpoint" {
   address_type = "INTERNAL"
 }
 
-# PSC Endpoint (Consumer측 Forwarding Rule)
+# PSC Endpoint (Consumer측 Forwarding Rule)  [Phase 2]
+# Service Attachment 가 생성된 후에만 생성 (count)
 resource "google_compute_forwarding_rule" "psc_endpoint" {
+  count = var.ilb_forwarding_rule_name != "" ? 1 : 0
+
   name   = "psc-endpoint"
   region = var.region
 
   # target 에 Service Attachment URI 지정 → 이것이 PSC endpoint 를 일반 FR과 구분짓는 핵심
-  target = google_compute_service_attachment.producer_api.id
+  target = google_compute_service_attachment.producer_api[0].id
 
   network    = google_compute_network.consumer.id
   subnetwork = google_compute_subnetwork.consumer.id
 
-  # 고정 IP 사용 (지정하지 않으면 ephemeral IP 자동 할당)
-  ip_address = google_compute_address.psc_endpoint.id
-
-  # PSC endpoint 는 load_balancing_scheme 을 빈 문자열로 지정
+  ip_address            = google_compute_address.psc_endpoint.id
   load_balancing_scheme = ""
 }
