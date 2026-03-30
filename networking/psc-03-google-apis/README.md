@@ -155,7 +155,7 @@ dig storage.googleapis.com
 # → ANSWER SECTION 에 PSC endpoint IP 가 표시되면 성공
 
 # 2. GCS 버킷 목록 조회
-gsutil ls
+gcloud storage buckets list
 
 # 3. curl 로 직접 API 호출
 curl -H "Authorization: Bearer $(gcloud auth print-access-token)" \

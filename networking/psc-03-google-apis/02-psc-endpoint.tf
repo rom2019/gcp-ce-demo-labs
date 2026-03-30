@@ -19,6 +19,10 @@ resource "google_compute_global_address" "psc_endpoint" {
   purpose      = "PRIVATE_SERVICE_CONNECT"
   network      = google_compute_network.vpc.id
 
+  # PSC Google APIs endpoint 는 subnet 에 속하지 않는 VPC 레벨 IP 를 사용
+  # 기존 subnet(10.0.0.0/24) 과 겹치지 않는 IP 를 명시적으로 지정
+  address = "10.0.1.2"
+
   depends_on = [google_project_service.apis]
 }
 
@@ -28,7 +32,8 @@ resource "google_compute_global_address" "psc_endpoint" {
 # - load_balancing_scheme = "": psc-02 와 동일하게 빈 문자열
 # - no_automate_dns_zone = true: DNS 를 03-dns.tf 에서 직접 관리
 resource "google_compute_global_forwarding_rule" "google_apis" {
-  name                  = "psc-google-apis"
+  # PSC Google APIs forwarding rule 이름 규칙: 소문자+숫자만, 하이픈 불가, 1-20자
+  name                  = "pscgoogleapis"
   target                = "all-apis"
   network               = google_compute_network.vpc.id
   ip_address            = google_compute_global_address.psc_endpoint.id

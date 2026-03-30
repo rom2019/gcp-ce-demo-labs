@@ -15,7 +15,7 @@ output "test_dns_cmd" {
 
 output "test_gcs_cmd" {
   description = "GCS 접근 테스트 명령어 (VM 내에서 실행)"
-  value       = "gsutil ls"
+  value       = "gcloud storage buckets list"
 }
 
 output "test_curl_cmd" {

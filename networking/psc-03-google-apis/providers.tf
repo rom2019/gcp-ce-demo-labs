@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.10"
+    }
   }
 }
 
@@ -25,6 +29,12 @@ resource "google_project_service" "apis" {
   project            = var.project_id
   service            = each.value
   disable_on_destroy = false
+}
+
+# API 활성화 후 전파 대기 (신규 프로젝트에서 즉시 사용 시 403 방지)
+resource "time_sleep" "api_propagation" {
+  create_duration = "60s"
+  depends_on      = [google_project_service.apis]
 }
 
 resource "google_project_organization_policy" "shielded_vm" {

@@ -7,6 +7,8 @@
 resource "google_compute_network" "vpc" {
   name                    = "psc-google-apis-vpc"
   auto_create_subnetworks = false
+
+  depends_on = [time_sleep.api_propagation]
 }
 
 resource "google_compute_subnetwork" "subnet" {
