@@ -30,6 +30,10 @@ resource "google_compute_service_attachment" "producer_api" {
   # 프로덕션에서는 ACCEPT_MANUAL + consumer_accept_lists 로 접근 제어
   connection_preference = "ACCEPT_AUTOMATIC"
 
+  # Proxy Protocol 비활성화 (L4 ILB 사용 시 일반적으로 false)
+  # true 로 설정하면 Consumer IP 정보를 Proxy Protocol 헤더로 전달 (HTTP/TCP 앱에서 원본 IP 확인 가능)
+  enable_proxy_protocol = false
+
   # ILB가 완전히 생성된 후 Service Attachment를 만들어야 함
   depends_on = [kubernetes_service.api_ilb]
 }
