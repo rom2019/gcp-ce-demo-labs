@@ -29,4 +29,9 @@ resource "google_container_cluster" "producer" {
   }
 
   deletion_protection = false
+
+  depends_on = [
+    google_project_service.apis,
+    google_project_organization_policy.shielded_vm,
+  ]
 }
