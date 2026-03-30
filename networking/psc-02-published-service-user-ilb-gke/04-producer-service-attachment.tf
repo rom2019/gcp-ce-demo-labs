@@ -1,0 +1,35 @@
+# ============================================================
+# [04] Producer Service Attachment
+# ============================================================
+# Service Attachment = PSC의 핵심 Producer 측 리소스
+#
+# 역할:
+#   - ILB(forwarding rule)를 PSC로 노출(publish)
+#   - Consumer가 PSC endpoint를 만들 때 이 attachment URI를 타겟으로 지정
+#
+# 흐름:
+#   Consumer PSC Endpoint(FR) → Service Attachment → ILB(FR) → GKE Pod
+#
+# Console 확인: Private Service Connect > Published services
+# ============================================================
+
+resource "google_compute_service_attachment" "producer_api" {
+  name        = "producer-api-service-attachment"
+  region      = var.region
+  description = "PSC Service Attachment for REST API on GKE"
+
+  # 연결 대상: 03에서 GKE가 생성한 L4 ILB forwarding rule
+  # networking.gke.io/load-balancer-name annotation 으로 이름을 고정했으므로 직접 참조 가능
+  target_service = "projects/${var.project_id}/regions/${var.region}/forwardingRules/producer-api-ilb"
+
+  # PSC 전용 NAT 서브넷 (01에서 생성)
+  # Consumer 트래픽이 이 서브넷 IP를 SNAT 주소로 사용
+  nat_subnets = [google_compute_subnetwork.producer_psc_nat.id]
+
+  # ACCEPT_AUTOMATIC: 모든 Consumer의 연결 요청을 자동 승인 (학습용)
+  # 프로덕션에서는 ACCEPT_MANUAL + consumer_accept_lists 로 접근 제어
+  connection_preference = "ACCEPT_AUTOMATIC"
+
+  # ILB가 완전히 생성된 후 Service Attachment를 만들어야 함
+  depends_on = [kubernetes_service.api_ilb]
+}
