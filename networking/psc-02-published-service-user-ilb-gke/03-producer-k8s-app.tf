@@ -1,13 +1,16 @@
 # ============================================================
-# [03] Producer K8s App + L4 ILB
+# [03] Producer K8s App
 # ============================================================
-# GKE가 K8s Service(type: LoadBalancer) 를 감지하면
-# 자동으로 L4 ILB(Internal Forwarding Rule) 를 생성함
+# K8s Service 를 type: ClusterIP + NEG annotation 으로 생성
+# → GKE 가 zone 별 NEG(Network Endpoint Group) 를 자동 생성
+# → ILB 는 04-producer-ilb.tf 에서 Terraform 으로 직접 생성 (이름 고정 목적)
+#
+# ※ networking.gke.io/load-balancer-name annotation 은 GCP forwarding rule
+#    이름을 제어하지 않음 → ILB를 직접 Terraform 으로 관리
 #
 # Console 확인:
 #   - Kubernetes Engine > Workloads (Deployment)
 #   - Kubernetes Engine > Services & Ingress (Service)
-#   - Network services > Load balancing (ILB 확인)
 # ============================================================
 
 # REST API 서버 Deployment (학습용 nginx)
@@ -60,18 +63,21 @@ resource "kubernetes_deployment" "api" {
   depends_on = [google_container_cluster.producer]
 }
 
-# K8s Service (type: LoadBalancer + Internal)
-# - cloud.google.com/load-balancer-type: "Internal" → L4 ILB 생성 (외부 LB 아님)
-# - networking.gke.io/load-balancer-name: GKE 1.24+ 에서 forwarding rule 이름 지정
-#   → 이 이름이 04-producer-service-attachment.tf 에서 target_service 로 참조됨
-resource "kubernetes_service" "api_ilb" {
+# K8s Service (type: ClusterIP + NEG annotation)
+# - type: ClusterIP → GKE 가 ILB를 자동 생성하지 않음
+# - cloud.google.com/neg: GKE 가 zone 별 NEG 를 생성하고 pod IP를 자동 등록
+#   NEG 이름(producer-api-neg)은 04-producer-ilb.tf 의 data source 에서 참조
+resource "kubernetes_service" "api" {
   metadata {
-    name      = "rest-api-ilb"
+    name      = "rest-api"
     namespace = "default"
 
     annotations = {
-      "cloud.google.com/load-balancer-type"  = "Internal"
-      "networking.gke.io/load-balancer-name" = "producer-api-ilb"
+      "cloud.google.com/neg" = jsonencode({
+        exposed_ports = {
+          "80" = { name = "producer-api-neg" }
+        }
+      })
     }
   }
 
@@ -86,6 +92,6 @@ resource "kubernetes_service" "api_ilb" {
       protocol    = "TCP"
     }
 
-    type = "LoadBalancer"
+    type = "ClusterIP"
   }
 }

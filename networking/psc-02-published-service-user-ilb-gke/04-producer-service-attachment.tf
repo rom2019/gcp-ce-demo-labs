@@ -18,9 +18,8 @@ resource "google_compute_service_attachment" "producer_api" {
   region      = var.region
   description = "PSC Service Attachment for REST API on GKE"
 
-  # 연결 대상: 03에서 GKE가 생성한 L4 ILB forwarding rule
-  # networking.gke.io/load-balancer-name annotation 으로 이름을 고정했으므로 직접 참조 가능
-  target_service = "projects/${var.project_id}/regions/${var.region}/forwardingRules/producer-api-ilb"
+  # 연결 대상: 04-producer-ilb.tf 에서 Terraform 으로 직접 생성한 L4 ILB forwarding rule
+  target_service = google_compute_forwarding_rule.api_ilb.id
 
   # PSC 전용 NAT 서브넷 (01에서 생성)
   # Consumer 트래픽이 이 서브넷 IP를 SNAT 주소로 사용
@@ -34,6 +33,5 @@ resource "google_compute_service_attachment" "producer_api" {
   # true 로 설정하면 Consumer IP 정보를 Proxy Protocol 헤더로 전달 (HTTP/TCP 앱에서 원본 IP 확인 가능)
   enable_proxy_protocol = false
 
-  # ILB가 완전히 생성된 후 Service Attachment를 만들어야 함
-  depends_on = [kubernetes_service.api_ilb]
+  depends_on = [google_compute_forwarding_rule.api_ilb]
 }
