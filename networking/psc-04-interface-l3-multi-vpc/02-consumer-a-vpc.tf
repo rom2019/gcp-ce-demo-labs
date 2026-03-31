@@ -50,7 +50,9 @@ resource "google_compute_firewall" "consumer_a_allow_producer" {
     protocol = "all"
   }
 
-  source_ranges = ["10.0.0.0/24"]
+  # 10.0.0.0/24: producer primary NIC → consumer (양방향)
+  # 10.1.0.0/24: consumer-a-vm → producer nic1 (같은 서브넷 내 통신)
+  source_ranges = ["10.0.0.0/24", "10.1.0.0/24"]
 }
 
 # IAP SSH (Consumer VM 접속용)

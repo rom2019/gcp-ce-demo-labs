@@ -32,6 +32,21 @@ resource "google_compute_firewall" "producer_iap_ssh" {
   source_ranges = ["35.235.240.0/20"]
 }
 
+# Cloud Router + NAT (startup_script 에서 apt-get 인터넷 접근 필요)
+resource "google_compute_router" "producer" {
+  name    = "producer-router"
+  region  = var.region
+  network = google_compute_network.producer.id
+}
+
+resource "google_compute_router_nat" "producer" {
+  name                               = "producer-nat"
+  router                             = google_compute_router.producer.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+}
+
 # Producer VM → Consumer VMs ICMP/TCP 허용 (양방향 테스트용)
 resource "google_compute_firewall" "producer_egress_allow" {
   name      = "producer-allow-egress"
