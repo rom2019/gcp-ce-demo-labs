@@ -1,0 +1,37 @@
+# [비교 실습] LoadBalancer 타입 서비스
+#
+# 이 파일은 Ingress와 비교하기 위한 실습용입니다.
+# 배포하면 frontend/backend 각각 외부 IP가 1개씩 발급됩니다(총 2개).
+# Ingress(03-ingress.yaml)와 비교해 차이를 체감하세요.
+#
+# 적용: kubectl apply -f k8s/04-lb-comparison.yaml
+# 확인: kubectl get service -l mode=lb-compare
+# 정리: kubectl delete -f k8s/04-lb-comparison.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-lb
+  labels:
+    mode: lb-compare
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-lb
+  labels:
+    mode: lb-compare
+spec:
+  type: LoadBalancer
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8080

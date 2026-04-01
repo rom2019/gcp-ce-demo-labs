@@ -1,0 +1,36 @@
+---
+# Autopilot 클러스터에서 GCE Ingress를 사용하려면 Container-native 로드밸런싱이 필요합니다.
+# `cloud.google.com/neg: '{"ingress": true}'` annotation이 NEG(Network Endpoint Group)를
+# 자동 생성하여 Ingress가 Pod IP로 직접 트래픽을 전달합니다.
+#
+# [비교] LoadBalancer vs NodePort+NEG+Ingress
+#   LoadBalancer: 서비스마다 외부 IP 1개 → 서비스 10개 = 외부 IP 10개, 비용 증가
+#   Ingress: 외부 IP 1개로 모든 서비스 노출 → 비용 절감, 경로 기반 라우팅 가능
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  annotations:
+    # Autopilot 필수: NEG 자동 생성 → Pod IP로 직접 라우팅 (Container-native LB)
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8080
