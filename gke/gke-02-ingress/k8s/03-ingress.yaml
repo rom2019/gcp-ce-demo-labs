@@ -1,0 +1,32 @@
+# GKE Ingress → Google Cloud HTTP(S) Load Balancer 자동 생성
+#
+# 경로 기반 라우팅:
+#   /      → frontend-svc (v1.0)
+#   /api/* → backend-svc  (v2.0)
+#
+# 외부 IP 1개로 두 서비스를 모두 노출합니다.
+# LoadBalancer Service 2개 대비 외부 IP 절약 + 중앙화된 라우팅 제어
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-svc
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-svc
+            port:
+              number: 80
