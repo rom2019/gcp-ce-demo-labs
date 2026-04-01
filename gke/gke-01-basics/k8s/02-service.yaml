@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-app-lb
+spec:
+  # LoadBalancer 타입은 GCP에서 외부 Network Load Balancer를 자동 생성합니다.
+  # ClusterIP: 클러스터 내부만 접근 가능
+  # NodePort: 노드 IP:포트로 접근 가능
+  # LoadBalancer: 외부 IP 발급 → 인터넷에서 직접 접근 가능
+  type: LoadBalancer
+  selector:
+    app: hello-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
