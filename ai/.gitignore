@@ -1,0 +1,12 @@
+# Terraform
+infra/terraform.tfvars
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/crash.log
+
+# Secrets
+*.key
+*.pem
+.env

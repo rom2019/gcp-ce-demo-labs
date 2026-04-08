@@ -1,0 +1,28 @@
+# LiteLLM Proxy 설정 파일
+# 이 파일은 Docker 이미지 빌드 시 /app/config.yaml 로 복사됩니다.
+
+model_list:
+  # ── Vertex AI (Gemini) ──────────────────────────────────────────────
+  # Cloud Run SA에 roles/aiplatform.user 가 부여되므로 API 키 불필요
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: vertex_ai/gemini-2.5-flash
+      vertex_project: os.environ/GOOGLE_CLOUD_PROJECT
+      vertex_location: us-central1
+
+  # ── Anthropic (API Key 방식) ────────────────────────────────────────
+  - model_name: claude-4-6-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+  # Admin UI 활성화 (선택)
+  ui_access_mode: "proxy_only"   # "admin_only" 로 변경하면 /ui 접근 제한
+
+litellm_settings:
+  # 요청/응답 로깅 (Cloud Run 로그에서 확인 가능)
+  set_verbose: false
+  drop_params: true   # 지원하지 않는 파라미터 자동 제거
