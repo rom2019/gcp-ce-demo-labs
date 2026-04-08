@@ -1,0 +1,54 @@
+steps:
+  # 1. Docker 이미지 빌드
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/litellm/proxy:$BUILD_ID'
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/litellm/proxy:latest'
+      - ./app
+
+  # 2. Artifact Registry 푸시
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/litellm/proxy'
+
+  # 3. Cloud Run 배포
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        # Secret Manager에 존재하는 시크릿만 --set-secrets에 포함
+        SECRETS="LITELLM_MASTER_KEY=litellm-master-key:latest"
+
+        if gcloud secrets describe anthropic-api-key --project=$PROJECT_ID &>/dev/null; then
+          SECRETS="$$SECRETS,ANTHROPIC_API_KEY=anthropic-api-key:latest"
+        fi
+
+        if gcloud secrets describe openai-api-key --project=$PROJECT_ID &>/dev/null; then
+          SECRETS="$$SECRETS,OPENAI_API_KEY=openai-api-key:latest"
+        fi
+
+        gcloud run deploy litellm-proxy \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/litellm/proxy:$BUILD_ID \
+          --region=${_REGION} \
+          --platform=managed \
+          --service-account=litellm-runner@$PROJECT_ID.iam.gserviceaccount.com \
+          --port=4000 \
+          --cpu=2 \
+          --memory=4Gi \
+          --min-instances=1 \
+          --max-instances=5 \
+          --set-env-vars=NUM_WORKERS=4 \
+          --set-secrets="$$SECRETS" \
+          --allow-unauthenticated
+
+substitutions:
+  _REGION: us-central1
+
+options:
+  logging: CLOUD_LOGGING_ONLY
